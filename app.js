@@ -3,7 +3,7 @@
 // GET  /exec?mode=catalog  -> { ok:true, catalog:[{item,toBuy,toSell,weBuy}] }
 // POST /exec               -> saves order
 // ===============================
-const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxzktqrK7hZiiMJh4yjn3aStx0V0-x3LJkQne9LP5Bjtch1XpEFb4E5bKEDIcvU3xA8/exec";
+const ENDPOINT_URL = "PASTE_YOUR_EXEC_URL_HERE";
 
 // ---------- Demo fallback catalog (remove once your endpoint works) ----------
 const DEMO_CATALOG = [
@@ -190,3 +190,58 @@ async function submitOrder(){
 
     const lineTotal = Number(it.weBuy||0) * qty;
     total += lineTotal;
+    items.push({ item: it.item, qty, weBuy: Number(it.weBuy||0), lineTotal });
+  }
+
+  if(items.length === 0) return setMsg("Add at least one item quantity.");
+
+  const payload = new URLSearchParams();
+  payload.append("playerName", playerName);
+  payload.append("server", server);
+  payload.append("discord", discord);
+  payload.append("items_json", JSON.stringify(items));
+  payload.append("items_text", items.map(i => `${i.qty}x ${i.item} @ ${i.weBuy} = ${i.lineTotal}`).join("\n"));
+  payload.append("total", String(total));
+  payload.append("source", "github-pages");
+  payload.append("website", ""); // honeypot field
+
+  const btn = $("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "Submitting…";
+  setMsg("Submitting order…");
+
+  try{
+    const res = await fetch(ENDPOINT_URL, {
+      method:"POST",
+      headers:{ "Content-Type":"application/x-www-form-urlencoded;charset=UTF-8" },
+      body: payload.toString()
+    });
+
+    const text = await res.text();
+    let data = null;
+    try{ data = JSON.parse(text); }catch{}
+
+    if(!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0,200)}`);
+    if(data && data.ok === false) throw new Error(data.message || "Order rejected");
+
+    const orderId = data?.orderId || data?.id || "";
+    setMsg(orderId ? `Order submitted! ID: ${orderId}` : "Order submitted!", true);
+    clearQty();
+  }catch(e){
+    setMsg(`Submit failed: ${String(e.message || e)}`);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Submit Order";
+  }
+}
+
+// Wire up UI
+$("filter").addEventListener("input", render);
+$("clearQtyBtn").addEventListener("click", clearQty);
+$("submitBtn").addEventListener("click", submitOrder);
+$("refreshStatusBtn").addEventListener("click", loadCatalog);
+
+// Start
+$("statusSub").textContent = "Last updated: —";
+online(true);
+loadCatalog();
