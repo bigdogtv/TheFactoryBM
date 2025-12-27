@@ -3,7 +3,7 @@
 // GET  /exec?mode=catalog  -> { ok:true, catalog:[{item,toBuy,toSell,weBuy}] }
 // POST /exec               -> saves order
 // ===============================
-const ENDPOINT_URL = "PASTE_YOUR_EXEC_URL_HERE";
+const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxzktqrK7hZiiMJh4yjn3aStx0V0-x3LJkQne9LP5Bjtch1XpEFb4E5bKEDIcvU3xA8/exec";
 
 // ---------- Demo fallback catalog (remove once your endpoint works) ----------
 const DEMO_CATALOG = [
