@@ -7,12 +7,6 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 
-<div class="mode">
-  <label><input type="radio" name="priceMode" value="weBuy" checked> WE BUY</label>
-  <label><input type="radio" name="priceMode" value="toBuy"> BUY</label>
-  <label><input type="radio" name="priceMode" value="toSell"> SELL</label>
-</div>
-
 <body>
   <div class="bg"></div>
   <div class="overlay"></div>
@@ -69,14 +63,22 @@
         <button class="btn ghost" id="clearQtyBtn" type="button">Clear Qty</button>
       </div>
 
+      <div class="mode">
+  <label><input type="radio" name="priceMode" value="weBuy" checked> WE BUY</label>
+  <label><input type="radio" name="priceMode" value="toBuy"> BUY</label>
+  <label><input type="radio" name="priceMode" value="toSell"> SELL</label>
+</div>
+
       <div class="table">
         <div class="thead">
-          <div>Item</div>
-          <div class="num">WE BUY</div>
-          <div class="num">BUY</div>
-          <div class="num">Qty</div>
-          <div class="num">Line Total</div>
-        </div>
+  <div>Item</div>
+  <div class="num">WE BUY</div>
+  <div class="num">BUY</div>
+  <div class="num">SELL</div>
+  <div class="num">Qty</div>
+  <div class="num">Line Total</div>
+</div>
+
 
         <div class="tbody" id="rows"></div>
       </div>
