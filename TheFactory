@@ -303,20 +303,26 @@
     }
 
     async function submitOrder(payload){
-      if (!APPS_SCRIPT_WEBAPP_URL || APPS_SCRIPT_WEBAPP_URL.includes("PASTE_")){
-        throw new Error("Apps Script URL not set.");
-      }
-      const res = await fetch(APPS_SCRIPT_WEBAPP_URL, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify(payload)
-      });
-      const text = await res.text();
-      let data;
-      try{ data = JSON.parse(text); } catch { throw new Error("Bad response: " + text); }
-      if (!data.success) throw new Error(data.message || "Order failed.");
-      return data;
-    }
+  if (!APPS_SCRIPT_WEBAPP_URL || APPS_SCRIPT_WEBAPP_URL.includes("PASTE_")){
+    throw new Error("Apps Script URL not set.");
+  }
+
+  // Avoid CORS preflight by sending as text/plain
+  const res = await fetch(APPS_SCRIPT_WEBAPP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  });
+
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new Error("Bad response: " + text); }
+
+  if (!data.success) throw new Error(data.message || "Order failed.");
+  return data;
+}
+
 
     // ====== EVENTS ======
     $("openCart").addEventListener("click", openCart);
