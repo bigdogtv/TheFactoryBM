@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Server Store</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#111a24; --panel2:#0f1620;
+      --text:#eaf2ff; --muted:#a9b6c7; --line:rgba(255,255,255,.10);
+      --accent:#5eead4; --accent2:#60a5fa; --danger:#fb7185;
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(1200px 800px at 10% -10%, rgba(94,234,212,.18), transparent 60%),
+         radial-gradient(1000px 700px at 110% 0%, rgba(96,165,250,.18), transparent 55%),
+         var(--bg); color:var(--text);}
+    a{color:inherit}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    header{position:sticky;top:0;z-index:5;background:rgba(11,15,20,.72);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 18px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .brand h1{font-size:16px;margin:0}
+    .brand .sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .input, select{
+      height:40px; padding:0 12px; border-radius:12px;
+      background:rgba(255,255,255,.04); border:1px solid var(--line);
+      color:var(--text); outline:none;
+    }
+    .input{width:min(320px, 70vw)}
+    .btn{
+      height:40px; padding:0 12px;border-radius:12px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04); color:var(--text); cursor:pointer;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#04121a; border:none; font-weight:800}
+    .btn.danger{background:rgba(251,113,133,.12); border:1px solid rgba(251,113,133,.35)}
+    .badge{font-size:12px;color:var(--muted);padding:6px 10px;border:1px solid var(--line);border-radius:999px}
+    main{padding:18px}
+    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;align-items:stretch}
+    @media (max-width:900px){.hero{grid-template-columns:1fr}}
+    .card{background:rgba(17,26,36,.78); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:0 22px 60px rgba(0,0,0,.35)}
+    .card h2{margin:0 0 8px;font-size:20px}
+    .card p{margin:6px 0;color:var(--muted);line-height:1.5}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+    @media (max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:640px){.grid{grid-template-columns:1fr}}
+    .p{background:rgba(15,22,32,.86); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; display:flex; flex-direction:column}
+    .p .img{height:130px;background:linear-gradient(135deg, rgba(94,234,212,.18), rgba(96,165,250,.18)); border-bottom:1px solid var(--line)}
+    .p .body{padding:14px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .p h3{margin:0;font-size:16px}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .tag{font-size:12px;color:var(--muted);padding:4px 8px;border:1px solid var(--line);border-radius:999px}
+    .price{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .price strong{font-size:16px}
+    /* cart drawer */
+    .drawerOverlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:50}
+    .drawer{position:fixed;top:0;right:0;height:100%;width:min(420px, 92vw);background:rgba(12,18,26,.95);
+      border-left:1px solid var(--line); transform:translateX(100%); transition:.18s ease; z-index:60; display:flex; flex-direction:column}
+    .drawerHeader{padding:14px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+    .drawerHeader h3{margin:0;font-size:16px}
+    .items{padding:12px;display:flex;flex-direction:column;gap:10px;overflow:auto;flex:1}
+    .item{border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(255,255,255,.03)}
+    .itemTop{display:flex;justify-content:space-between;gap:10px}
+    .qty{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .qty button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);cursor:pointer}
+    .drawerFooter{padding:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+    .row{display:flex;justify-content:space-between;gap:10px}
+    /* modal */
+    .modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:80}
+    .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,92vw);
+      background:rgba(12,18,26,.96); border:1px solid var(--line); border-radius:18px; padding:14px; display:none; z-index:90}
+    .modal h3{margin:4px 0 10px}
+    .form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:640px){.form{grid-template-columns:1fr}}
+    textarea{min-height:92px;padding:10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text);outline:none;resize:vertical}
+    .hint{font-size:12px;color:var(--muted);line-height:1.4}
+    .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(17,26,36,.95);
+      border:1px solid var(--line); padding:10px 12px;border-radius:14px; display:none; z-index:100; max-width:min(720px,92vw)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>Server Store</h1>
+          <div class="sub">Cosmetics / supporter perks • fast checkout • Discord ticket-ready</div>
+        </div>
+      </div>
+      <div class="controls">
+        <input id="q" class="input" placeholder="Search items…" />
+        <select id="cat">
+          <option value="all">All categories</option>
+        </select>
+        <button class="btn" id="openCart">🛒 Cart <span class="badge" id="cartCount">0</span></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="hero">
+      <div class="card">
+        <h2>Support the server (without gameplay advantage)</h2>
+        <p>
+          This store is built for cosmetic items and non-gameplay perks.
+          Orders are logged to Google Sheets and can ping Discord automatically.
+        </p>
+        <div class="meta">
+          <span class="tag">Search + filter</span>
+          <span class="tag">Cart + checkout</span>
+          <span class="tag">Google Sheets logging</span>
+          <span class="tag">Discord webhook</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>How to redeem</h2>
+        <p>After checkout, you’ll get an order ID. Open a Discord ticket and paste the ID + your IGN.</p>
+        <p class="hint">Admin tip: match order IDs to the sheet row, then apply perks.</p>
+      </div>
+    </section>
+
+    <main>
+      <div class="grid" id="grid"></div>
+    </main>
+  </div>
+
+  <!-- Cart Drawer -->
+  <div class="drawerOverlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawerHeader">
+      <h3>Your cart</h3>
+      <button class="btn" id="closeCart">✕</button>
+    </div>
+    <div class="items" id="items"></div>
+    <div class="drawerFooter">
+      <div class="row"><span class="hint">Subtotal</span><strong id="subtotal">$0</strong></div>
+      <button class="btn primary" id="checkoutBtn">Checkout</button>
+      <button class="btn danger" id="clearCart">Clear cart</button>
+      <div class="hint">No chargebacks: perks may be removed & bans may apply.</div>
+    </div>
+  </aside>
+
+  <!-- Checkout Modal -->
+  <div class="modalOverlay" id="modalOverlay"></div>
+  <div class="modal" id="modal">
+    <h3>Checkout</h3>
+    <div class="form">
+      <input id="ign" class="input" placeholder="In-game name (IGN)" />
+      <input id="discord" class="input" placeholder="Discord (name#0000 or @name)" />
+      <input id="server" class="input" placeholder="Server (optional)" />
+      <input id="email" class="input" placeholder="Email (optional)" />
+      <textarea id="notes" placeholder="Notes (optional)"></textarea>
+      <div class="hint">
+        Your order will be logged and you'll receive an Order ID.<br/>
+        Paste that ID into a Discord ticket for fast fulfillment.
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap">
+      <button class="btn" id="cancelCheckout">Cancel</button>
+      <button class="btn primary" id="placeOrder">Place order</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ====== CONFIG ======
+    const APPS_SCRIPT_WEBAPP_URL = "PASTE_YOUR_DEPLOYED_WEBAPP_URL_HERE";
+
+    // Example products (replace with your own)
+    const PRODUCTS = [
+      { id:"bronze", name:"Supporter — Bronze", cat:"Supporter", price:5, desc:"Discord role + cosmetic armband/patch." },
+      { id:"silver", name:"Supporter — Silver", cat:"Supporter", price:10, desc:"Bronze + custom clothing texture slot (cosmetic)." },
+      { id:"gold", name:"Supporter — Gold", cat:"Supporter", price:20, desc:"Silver + name color/title (cosmetic)." },
+      { id:"queue", name:"Queue Perk", cat:"Perks", price:5, desc:"Reserved slot / priority queue (non-gameplay)." },
+      { id:"emote", name:"Custom Emote Pack", cat:"Cosmetics", price:7, desc:"Cosmetic-only emote pack (if supported)." },
+      { id:"patch", name:"Clan Patch", cat:"Cosmetics", price:4, desc:"Custom patch/logo placement (cosmetic)." },
+    ];
+
+    // ====== STATE ======
+    const $ = (id)=>document.getElementById(id);
+    const cart = new Map(); // id -> qty
+
+    // ====== UI HELPERS ======
+    function money(n){ return `$${Number(n).toFixed(2)}`; }
+    function toast(msg){
+      const t = $("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      clearTimeout(toast._tm);
+      toast._tm = setTimeout(()=>t.style.display="none", 3200);
+    }
+
+    function openCart(){
+      $("drawerOverlay").style.display="block";
+      $("drawer").style.transform="translateX(0)";
+      renderCart();
+    }
+    function closeCart(){
+      $("drawerOverlay").style.display="none";
+      $("drawer").style.transform="translateX(100%)";
+    }
+    function openModal(){
+      $("modalOverlay").style.display="block";
+      $("modal").style.display="block";
+    }
+    function closeModal(){
+      $("modalOverlay").style.display="none";
+      $("modal").style.display="none";
+    }
+
+    function subtotal(){
+      let s=0;
+      for (const [id,qty] of cart.entries()){
+        const p = PRODUCTS.find(x=>x.id===id);
+        if (p) s += p.price * qty;
+      }
+      return s;
+    }
+
+    function setQty(id, qty){
+      if (qty <= 0) cart.delete(id);
+      else cart.set(id, qty);
+      renderCartCount();
+      renderCart();
+    }
+
+    function addToCart(id){
+      const qty = cart.get(id) || 0;
+      cart.set(id, qty+1);
+      renderCartCount();
+      toast("Added to cart");
+    }
+
+    function renderCartCount(){
+      let c=0;
+      for (const q of cart.values()) c += q;
+      $("cartCount").textContent = c;
+    }
+
+    function renderProducts(){
+      const q = $("q").value.trim().toLowerCase();
+      const cat = $("cat").value;
+
+      const list = PRODUCTS.filter(p=>{
+        const matchesQ = !q || (p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q));
+        const matchesC = (cat==="all") || (p.cat===cat);
+        return matchesQ && matchesC;
+      });
+
+      $("grid").innerHTML = list.map(p=>`
+        <div class="p">
+          <div class="img"></div>
+          <div class="body">
+            <div class="meta"><span class="tag">${p.cat}</span></div>
+            <h3>${p.name}</h3>
+            <p style="margin:0;color:var(--muted);line-height:1.45">${p.desc}</p>
+            <div class="price">
+              <strong>${money(p.price)}</strong>
+              <button class="btn primary" onclick="addToCart('${p.id}')">Add</button>
+            </div>
+          </div>
+        </div>
+      `).join("") || `<div class="card" style="grid-column:1/-1"><h2>No matches</h2><p>Try another search or category.</p></div>`;
+    }
+
+    function renderCategories(){
+      const cats = Array.from(new Set(PRODUCTS.map(p=>p.cat))).sort();
+      $("cat").innerHTML = `<option value="all">All categories</option>` + cats.map(c=>`<option value="${c}">${c}</option>`).join("");
+    }
+
+    function renderCart(){
+      const rows = [];
+      for (const [id,qty] of cart.entries()){
+        const p = PRODUCTS.find(x=>x.id===id);
+        if (!p) continue;
+        rows.push(`
+          <div class="item">
+            <div class="itemTop">
+              <div>
+                <div style="font-weight:800">${p.name}</div>
+                <div class="hint">${p.cat} • ${money(p.price)}</div>
+              </div>
+              <button class="btn danger" onclick="setQty('${id}', 0)">Remove</button>
+            </div>
+            <div class="qty">
+              <button onclick="setQty('${id}', ${qty-1})">−</button>
+              <div style="min-width:40px;text-align:center;font-weight:800">${qty}</div>
+              <button onclick="setQty('${id}', ${qty+1})">+</button>
+              <div style="margin-left:auto;font-weight:800">${money(p.price*qty)}</div>
+            </div>
+          </div>
+        `);
+      }
+
+      $("items").innerHTML = rows.join("") || `<div class="hint">Cart is empty.</div>`;
+      $("subtotal").textContent = money(subtotal());
+    }
+
+    async function submitOrder(payload){
+      if (!APPS_SCRIPT_WEBAPP_URL || APPS_SCRIPT_WEBAPP_URL.includes("PASTE_")){
+        throw new Error("Apps Script URL not set.");
+      }
+      const res = await fetch(APPS_SCRIPT_WEBAPP_URL, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+      const text = await res.text();
+      let data;
+      try{ data = JSON.parse(text); } catch { throw new Error("Bad response: " + text); }
+      if (!data.success) throw new Error(data.message || "Order failed.");
+      return data;
+    }
+
+    // ====== EVENTS ======
+    $("openCart").addEventListener("click", openCart);
+    $("closeCart").addEventListener("click", closeCart);
+    $("drawerOverlay").addEventListener("click", closeCart);
+
+    $("q").addEventListener("input", renderProducts);
+    $("cat").addEventListener("change", renderProducts);
+
+    $("clearCart").addEventListener("click", ()=>{
+      cart.clear(); renderCartCount(); renderCart();
+      toast("Cart cleared");
+    });
+
+    $("checkoutBtn").addEventListener("click", ()=>{
+      if (cart.size===0) return toast("Your cart is empty.");
+      openModal();
+    });
+
+    $("cancelCheckout").addEventListener("click", closeModal);
+    $("modalOverlay").addEventListener("click", closeModal);
+
+    $("placeOrder").addEventListener("click", async ()=>{
+      if (cart.size===0) return toast("Your cart is empty.");
+
+      const ign = $("ign").value.trim();
+      const discord = $("discord").value.trim();
+      if (!ign || !discord) return toast("Please enter IGN + Discord.");
+
+      const items = Array.from(cart.entries()).map(([id,qty])=>{
+        const p = PRODUCTS.find(x=>x.id===id);
+        return { id, name:p?.name, cat:p?.cat, price:p?.price, qty };
+      });
+
+      const payload = {
+        ign,
+        discord,
+        server: $("server").value.trim(),
+        email: $("email").value.trim(),
+        notes: $("notes").value.trim(),
+        items,
+        subtotal: subtotal(),
+        createdAt: new Date().toISOString()
+      };
+
+      try{
+        $("placeOrder").disabled = true;
+        $("placeOrder").textContent = "Placing…";
+        const out = await submitOrder(payload);
+
+        // success
+        closeModal();
+        closeCart();
+        cart.clear(); renderCartCount(); renderCart();
+        toast(`Order placed! Order ID: ${out.orderId}`);
+
+        // optionally show an alert with the order ID
+        alert(`Order placed!\n\nOrder ID: ${out.orderId}\n\nPaste this into your Discord ticket for fulfillment.`);
+      }catch(e){
+        toast(e.message || "Order failed.");
+      }finally{
+        $("placeOrder").disabled = false;
+        $("placeOrder").textContent = "Place order";
+      }
+    });
+
+    // ====== INIT ======
+    renderCategories();
+    renderProducts();
+    renderCartCount();
+  </script>
+</body>
+</html>
