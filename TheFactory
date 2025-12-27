@@ -170,7 +170,7 @@
 
   <script>
     // ====== CONFIG ======
-    const APPS_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwkzRjPgifoJUfozhOuruuDUo-iRuRULC3S6i0541rn9zBaQjXRM-GLIhWUjrMKvKpuGw/exec";
+    const APPS_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/library/d/1zE-FftL00gFDXucTeXREoTsyeqxh0SVeYEYlmPidbnbNPiPFdWHDJPK7/1";
 
     // Example products (replace with your own)
     const PRODUCTS = [
