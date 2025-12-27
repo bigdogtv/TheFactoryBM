@@ -154,7 +154,7 @@ body{
 
 .thead, .tr{
   display:grid;
-  grid-template-columns: 1.6fr .6fr .6fr .55fr .65fr;
+  grid-template-columns: 1.6fr .6fr .6fr .6fr .55fr .65fr;
   gap:12px;
   align-items:center;
   padding:12px 14px;
