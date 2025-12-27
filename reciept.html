@@ -1,1 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Receipt</title>
+  <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="overlay"></div>
+
+  <main class="wrap">
+    <section class="panel">
+      <h1 style="margin:0 0 10px;">Order Receipt</h1>
+
+      <div class="controls">
+        <div class="field grow">
+          <label>Order ID</label>
+          <input id="orderIdInput" placeholder="DZ-XXXXXXXX" />
+        </div>
+        <button class="btn primary" id="lookupBtn" type="button">Lookup</button>
+        <a class="btn ghost" href="./index.html">Back</a>
+      </div>
+
+      <div class="pill" id="receiptStatus">Waiting…</div>
+
+      <pre id="receiptBox" style="white-space:pre-wrap; margin-top:12px; padding:12px; border:1px solid var(--line); border-radius:14px; background:rgba(0,0,0,.25);"></pre>
+    </section>
+  </main>
+
+  <script>
+    const ENDPOINT_URL = "PASTE_YOUR_EXEC_URL_HERE";
+    const $ = (id) => document.getElementById(id);
+
+    function qs(name){
+      const p = new URLSearchParams(location.search);
+      return p.get(name) || "";
+    }
+
+    async function lookup(orderId){
+      $("receiptStatus").textContent = "Loading…";
+      $("receiptBox").textContent = "";
+
+      const res = await fetch(`${ENDPOINT_URL}?mode=order&orderId=${encodeURIComponent(orderId)}`);
+      const data = await res.json();
+
+      if(!data.ok){
+        $("receiptStatus").textContent = "Not found";
+        $("receiptBox").textContent = data.message || "Order not found";
+        return;
+      }
+
+      const o = data.order;
+      $("receiptStatus").textContent = `Status: ${o.status}`;
+      $("receiptBox").textContent =
+        `Order ID: ${o.orderId}\n` +
+        `Time: ${o.timestamp}\n` +
+        `Player: ${o.playerName}\n` +
+        `Server: ${o.server}\n` +
+        `Discord: ${o.discord}\n` +
+        `Mode: ${o.priceMode}\n` +
+        `Total: ${o.total}\n\n` +
+        (o.items_text || "");
+    }
+
+    $("lookupBtn").addEventListener("click", () => {
+      const id = ($("orderIdInput").value || "").trim();
+      if(id) lookup(id);
+    });
+
+    // Auto-load if orderId in URL
+    const id = qs("orderId");
+    if(id){
+      $("orderIdInput").value = id;
+      lookup(id);
+    } else {
+      $("receiptStatus").textContent = "Enter an Order ID and click Lookup";
+    }
+  </script>
+</body>
+</html>
 
