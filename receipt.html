@@ -30,7 +30,7 @@
   </main>
 
   <script>
-    const ENDPOINT_URL = "PASTE_YOUR_EXEC_URL_HERE";
+    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbXXXXXXXXXXXX/exec";
     const $ = (id) => document.getElementById(id);
 
     function qs(name){
@@ -70,13 +70,38 @@
     });
 
     // Auto-load if orderId in URL
-    const id = qs("orderId");
-    if(id){
-      $("orderIdInput").value = id;
-      lookup(id);
-    } else {
-      $("receiptStatus").textContent = "Enter an Order ID and click Lookup";
-    }
+    async function lookup(orderId){
+  $("receiptStatus").textContent = "Loading…";
+  $("receiptBox").textContent = "";
+
+  try {
+    const url = `${ENDPOINT_URL}?mode=order&orderId=${encodeURIComponent(orderId)}`;
+    const res = await fetch(url);
+
+    const text = await res.text(); // read raw text first
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error("Bad JSON: " + text.slice(0,200)); }
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0,200)}`);
+    if (!data.ok) throw new Error(data.message || "Order not found");
+
+    const o = data.order;
+    $("receiptStatus").textContent = `Status: ${o.status}`;
+    $("receiptBox").textContent =
+      `Order ID: ${o.orderId}\n` +
+      `Time: ${o.timestamp}\n` +
+      `Player: ${o.playerName}\n` +
+      `Server: ${o.server}\n` +
+      `Discord: ${o.discord}\n` +
+      `Mode: ${o.priceMode}\n` +
+      `Total: ${o.total}\n\n` +
+      (o.items_text || "");
+  } catch (err) {
+    $("receiptStatus").textContent = "Lookup failed";
+    $("receiptBox").textContent = String(err.message || err);
+  }
+}
+
   </script>
 </body>
 </html>
