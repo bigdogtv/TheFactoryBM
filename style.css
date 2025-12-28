@@ -154,7 +154,7 @@ body{
 
 .thead, .tr{
   display:grid;
-  grid-template-columns: 1.6fr .6fr .6fr .6fr .55fr .65fr;
+  grid-template-columns: 1.8fr .7fr .7fr .6fr .7fr;
   gap:12px;
   align-items:center;
   padding:12px 14px;
@@ -178,17 +178,22 @@ body{
 }
 .tr:last-child{border-bottom:none}
 .item{font-weight:650}
-.num{text-align:right}
-.qty{
-  width:100%;
+.num{
+  display:flex;
+  align-items:center;
+  justify-content:center;
   text-align:center;
-  padding:9px 10px;
-  border-radius:12px;
-  border:1px solid var(--line2);
-  background: rgba(0,0,0,.28);
-  color:var(--text);
-  outline:none;
 }
+.item{
+  display:flex;
+  align-items:center;
+}
+
+.qty{
+  text-align:center;
+  width: 90px;
+}
+
 
 .bottom{
   margin-top:12px;
