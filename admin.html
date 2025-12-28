@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin Orders</title>
+  <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="overlay"></div>
+
+  <main class="wrap">
+    <section class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <h1 style="margin:0;">Admin – Orders</h1>
+        <a class="btn ghost" href="./index.html">Back to Site</a>
+      </div>
+
+      <div class="controls" style="margin-top:12px;">
+        <div class="field grow">
+          <label>Admin Key</label>
+          <input id="adminKey" placeholder="Paste admin key" />
+        </div>
+        <button class="btn primary" id="saveKeyBtn" type="button">Save Key</button>
+
+        <div class="field grow">
+          <label>Filter</label>
+          <input id="q" placeholder="Search orderId / player / server / status" />
+        </div>
+
+        <button class="btn" id="refreshBtn" type="button">Refresh</button>
+      </div>
+
+      <div class="pill" id="adminMsg">Waiting…</div>
+
+      <div id="orders" style="margin-top:12px; display:flex; flex-direction:column; gap:12px;"></div>
+    </section>
+  </main>
+
+  <script>
+    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxzktqrK7hZiiMJh4yjn3aStx0V0-x3LJkQne9LP5Bjtch1XpEFb4E5bKEDIcvU3xA8/exec";
+    const $ = (id) => document.getElementById(id);
+
+    function setMsg(t){ $("adminMsg").textContent = t; }
+
+    function loadSavedKey(){
+      const k = sessionStorage.getItem("ADMIN_KEY") || "";
+      $("adminKey").value = k;
+      return k;
+    }
+
+    function saveKey(){
+      const k = ($("adminKey").value || "").trim();
+      sessionStorage.setItem("ADMIN_KEY", k);
+      setMsg("Key saved.");
+      return k;
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+    }
+
+    function statusButtons(orderId, current, meta){
+      const statuses = ["new","accepted","preparing","ready","completed","cancelled"];
+      return statuses.map(st => `
+        <button class="btn ${st===current ? "primary" : "ghost"}"
+          data-oid="${orderId}" data-status="${st}">
+          ${st}
+        </button>
+      `).join("");
+    }
+
+    // JSONP loader
+    function jsonp(url, cbName){
+      return new Promise((resolve, reject) => {
+        const id = "jsonp_" + Date.now();
+        window[cbName] = (data) => { resolve(data); cleanup(); };
+        function cleanup(){
+          document.getElementById(id)?.remove();
+          delete window[cbName];
+        }
+        const s = document.createElement("script");
+        s.id = id;
+        s.src = url + "&t=" + Date.now();
+        s.onerror = () => { cleanup(); reject(new Error("JSONP load failed")); };
+        document.body.appendChild(s);
+      });
+    }
+
+    async function fetchOrders(){
+      const key = ($("adminKey").value || "").trim();
+      if(!key) { setMsg("Paste admin key first."); return; }
+
+      setMsg("Loading orders…");
+      const cb = "__ordersCB";
+      const url = `${ENDPOINT_URL}?mode=orders&key=${encodeURIComponent(key)}&callback=${cb}`;
+      let data;
+      try{
+        data = await jsonp(url, cb);
+      }catch(e){
+        setMsg("Failed to load orders. (Wrong key or endpoint?)");
+        return;
+      }
+      if(!data.ok){
+        setMsg(data.message || "Unauthorized");
+        return;
+      }
+
+      const q = ($("q").value || "").toLowerCase().trim();
+      const list = (data.orders || []).filter(o => {
+        if(!q) return true;
+        const blob = `${o.orderId} ${o.playerName} ${o.server} ${o.status}`.toLowerCase();
+        return blob.includes(q);
+      });
+
+      renderOrders(list);
+      setMsg(`Loaded ${list.length} orders`);
+    }
+
+    function renderOrders(list){
+      const root = $("orders");
+      root.innerHTML = "";
+
+      for(const o of list){
+        const div = document.createElement("div");
+        div.style.border = "1px solid var(--line)";
+        div.style.borderRadius = "16px";
+        div.style.padding = "12px";
+        div.style.background = "rgba(0,0,0,.25)";
+
+        div.innerHTML = `
+          <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:700;">${escapeHtml(o.orderId)} <span style="opacity:.7;">(${escapeHtml(o.status)})</span></div>
+              <div style="opacity:.85;">${escapeHtml(o.playerName)} • ${escapeHtml(o.server)} • ${escapeHtml(o.priceMode)}</div>
+              <div style="opacity:.7; font-size:12px;">${escapeHtml(String(o.timestamp))}</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <a class="btn ghost" href="./receipt.html?orderId=${encodeURIComponent(o.orderId)}" target="_blank">Receipt</a>
+            </div>
+          </div>
+
+          <pre style="white-space:pre-wrap; margin:10px 0 0;">${escapeHtml(o.items_text || "")}</pre>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:10px;">
+            <div class="field">
+              <label>Pickup Location</label>
+              <input data-ploc="${escapeHtml(o.orderId)}" value="${escapeHtml(o.pickupLocation || "")}" />
+            </div>
+            <div class="field">
+              <label>Pickup Window</label>
+              <input data-pwin="${escapeHtml(o.orderId)}" value="${escapeHtml(o.pickupWindow || "")}" />
+            </div>
+            <div class="field">
+              <label>Notes</label>
+              <input data-notes="${escapeHtml(o.orderId)}" value="${escapeHtml(o.notes || "")}" />
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+            ${statusButtons(o.orderId, o.status)}
+          </div>
+        `;
+
+        root.appendChild(div);
+      }
+
+      // bind buttons
+      root.querySelectorAll("button[data-oid]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const key = ($("adminKey").value || "").trim();
+          const orderId = btn.getAttribute("data-oid");
+          const status = btn.getAttribute("data-status");
+
+          const ploc = root.querySelector(`input[data-ploc="${CSS.escape(orderId)}"]`)?.value || "";
+          const pwin = root.querySelector(`input[data-pwin="${CSS.escape(orderId)}"]`)?.value || "";
+          const notes = root.querySelector(`input[data-notes="${CSS.escape(orderId)}"]`)?.value || "";
+
+          setMsg(`Updating ${orderId} → ${status}…`);
+
+          const cb = "__updCB";
+          const url = `${ENDPOINT_URL}?mode=adminUpdate&key=${encodeURIComponent(key)}`
+            + `&orderId=${encodeURIComponent(orderId)}`
+            + `&status=${encodeURIComponent(status)}`
+            + `&pickupLocation=${encodeURIComponent(ploc)}`
+            + `&pickupWindow=${encodeURIComponent(pwin)}`
+            + `&notes=${encodeURIComponent(notes)}`
+            + `&callback=${cb}`;
+
+          try{
+            const data = await jsonp(url, cb);
+            if(!data.ok) throw new Error(data.message || "Update failed");
+            await fetchOrders();
+          }catch(e){
+            setMsg(String(e.message || e));
+          }
+        });
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      loadSavedKey();
+      $("saveKeyBtn").addEventListener("click", saveKey);
+      $("refreshBtn").addEventListener("click", fetchOrders);
+      $("q").addEventListener("input", fetchOrders);
+      setMsg("Paste admin key and click Refresh.");
+    });
+  </script>
+</body>
+</html>
