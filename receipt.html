@@ -30,78 +30,77 @@
   </main>
 
   <script>
-    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxzktqrK7hZiiMJh4yjn3aStx0V0-x3LJkQne9LP5Bjtch1XpEFb4E5bKEDIcvU3xA8/exec";
-    const $ = (id) => document.getElementById(id);
-
-  function qs(name){
-    const p = new URLSearchParams(location.search);
-    return p.get(name) || "";
-  }
-
-  // JSONP callback
-  window.__onOrder = (data) => {
-    if(!data || !data.ok){
-      $("receiptStatus").textContent = "Not found";
-      $("receiptBox").textContent = data?.message || "Order not found";
-      return;
-    }
-    const o = data.order;
-    $("receiptStatus").textContent = `Status: ${o.status}`;
-    $("receiptBox").textContent =
-      `Order ID: ${o.orderId}\n` +
-      `Time: ${o.timestamp}\n` +
-      `Player: ${o.playerName}\n` +
-      `Server: ${o.server}\n` +
-      `Discord: ${o.discord}\n` +
-      `Mode: ${o.priceMode}\n` +
-      `Total: ${o.total}\n\n` +
-      (o.items_text || "");
-  };
+  const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxzktqrK7hZiiMJh4yjn3aStx0V0-x3LJkQne9LP5Bjtch1XpEFb4E5bKEDIcvU3xA8/exec";
+  const $ = (id) => document.getElementById(id);
 
   function lookup(orderId){
-  $("receiptStatus").textContent = "Loading…";
-  $("receiptBox").textContent = "";
+    $("receiptStatus").textContent = "Loading…";
+    $("receiptBox").textContent = "";
 
-  // remove any prior jsonp script
-  const old = document.getElementById("jsonp");
-  if (old) old.remove();
+    document.getElementById("jsonp")?.remove();
 
-  // define callback BEFORE inserting script
-  window.__onOrder = (data) => {
-    if(!data || !data.ok){
-      $("receiptStatus").textContent = "Not found";
-      $("receiptBox").textContent = data?.message || "Order not found";
-      return;
+    window.__onOrder = (data) => {
+      if(!data || !data.ok){
+        $("receiptStatus").textContent = "Not found";
+        $("receiptBox").textContent = data?.message || "Order not found";
+        return;
+      }
+      const o = data.order;
+      $("receiptStatus").textContent = `Status: ${o.status}`;
+      $("receiptBox").textContent =
+        `Order ID: ${o.orderId}\n` +
+        `Time: ${o.timestamp}\n` +
+        `Player: ${o.playerName}\n` +
+        `Server: ${o.server}\n` +
+        `Discord: ${o.discord}\n` +
+        `Mode: ${o.priceMode}\n` +
+        `Total: ${o.total}\n\n` +
+        (o.items_text || "");
+    };
+
+    const url = `${ENDPOINT_URL}?mode=order&orderId=${encodeURIComponent(orderId)}&callback=__onOrder&t=${Date.now()}`;
+
+    const s = document.createElement("script");
+    s.id = "jsonp";
+    s.src = url;
+    s.async = true;
+
+    const timer = setTimeout(() => {
+      $("receiptStatus").textContent = "Lookup failed";
+      $("receiptBox").textContent =
+        "Timeout waiting for response.\n\nTried:\n" + url +
+        "\n\nOpen that link in a new tab. You should see: __onOrder({...});";
+    }, 6000);
+
+    s.onload = () => clearTimeout(timer);
+    s.onerror = () => {
+      clearTimeout(timer);
+      $("receiptStatus").textContent = "Lookup failed";
+      $("receiptBox").textContent =
+        "JSONP script failed to load.\n\nTried:\n" + url +
+        "\n\nOpen that link in a new tab. If it works there, hard refresh this page (Ctrl+F5).";
+    };
+
+    document.body.appendChild(s);
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    const btn = $("lookupBtn");
+    btn.addEventListener("click", () => {
+      const id = ($("orderIdInput").value || "").trim();
+      if(id) lookup(id);
+    });
+
+    const urlId = (new URLSearchParams(location.search)).get("orderId") || "";
+    if(urlId){
+      $("orderIdInput").value = urlId;
+      lookup(urlId);
+    } else {
+      $("receiptStatus").textContent = "Enter an Order ID and click Lookup";
     }
-    const o = data.order;
-    $("receiptStatus").textContent = `Status: ${o.status}`;
-    $("receiptBox").textContent =
-      `Order ID: ${o.orderId}\n` +
-      `Time: ${o.timestamp}\n` +
-      `Player: ${o.playerName}\n` +
-      `Server: ${o.server}\n` +
-      `Discord: ${o.discord}\n` +
-      `Mode: ${o.priceMode}\n` +
-      `Total: ${o.total}\n\n` +
-      (o.items_text || "");
-  };
-
-  const s = document.createElement("script");
-  s.id = "jsonp";
-  s.src = `${ENDPOINT_URL}?mode=order&orderId=${encodeURIComponent(orderId)}&callback=__onOrder&t=${Date.now()}`;
-
-  // ⬇⬇⬇ THIS IS WHERE YOUR CODE GOES ⬇⬇⬇
-  s.onerror = () => {
-    $("receiptStatus").textContent = "Lookup failed";
-    $("receiptBox").textContent =
-      "JSONP load failed.\n\nTried:\n" + s.src +
-      "\n\nOpen that link in a new tab. If you see a Google page (not __onOrder(...)), it’s an access/deploy issue.";
-  };
-
-  document.body.appendChild(s);
-}
-
+  });
 </script>
+
 </body>
 </html>
 
