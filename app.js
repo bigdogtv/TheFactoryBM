@@ -3,7 +3,7 @@
 // GET  /exec?mode=catalog  -> { ok:true, catalog:[{item,toBuy,toSell,weBuy}] }
 // POST /exec               -> saves order
 // ===============================
-const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbXXXXXXXXXXXX/exec";
+const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxzktqrK7hZiiMJh4yjn3aStx0V0-x3LJkQne9LP5Bjtch1XpEFb4E5bKEDIcvU3xA8/exec";
 
 const $ = (id) => document.getElementById(id);
 let catalog = [];
