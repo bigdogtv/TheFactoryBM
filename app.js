@@ -216,7 +216,8 @@ async function submitOrder(){
     clearQty();
 
     // Redirect to receipt page
-    window.location.href = `receipt.html?orderId=${encodeURIComponent(orderId)}`;
+    window.location.href = `./receipt.html?orderId=${encodeURIComponent(orderId)}`;
+
   }catch(e){
     setMsg(`Submit failed: ${String(e.message || e)}`);
   }finally{
