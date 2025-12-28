@@ -58,7 +58,9 @@
         (o.items_text || "");
     };
 
-    const url = `${ENDPOINT_URL}?mode=order&orderId=${encodeURIComponent(orderId)}&callback=__onOrder&t=${Date.now()}`;
+    const url =
+      `${ENDPOINT_URL}?mode=order&orderId=${encodeURIComponent(orderId)}` +
+      `&callback=__onOrder&t=${Date.now()}`;
 
     const s = document.createElement("script");
     s.id = "jsonp";
@@ -68,8 +70,7 @@
     const timer = setTimeout(() => {
       $("receiptStatus").textContent = "Lookup failed";
       $("receiptBox").textContent =
-        "Timeout waiting for response.\n\nTried:\n" + url +
-        "\n\nOpen that link in a new tab. You should see: __onOrder({...});";
+        "Timeout waiting for response.\n\nTried:\n" + url;
     }, 6000);
 
     s.onload = () => clearTimeout(timer);
@@ -77,23 +78,25 @@
       clearTimeout(timer);
       $("receiptStatus").textContent = "Lookup failed";
       $("receiptBox").textContent =
-        "JSONP script failed to load.\n\nTried:\n" + url +
-        "\n\nOpen that link in a new tab. If it works there, hard refresh this page (Ctrl+F5).";
+        "JSONP script failed.\n\nTried:\n" + url;
     };
 
     document.body.appendChild(s);
   }
 
+  // 🔒 DOM READY — THIS WAS MISSING
   window.addEventListener("DOMContentLoaded", () => {
     const btn = $("lookupBtn");
+    const input = $("orderIdInput");
+
     btn.addEventListener("click", () => {
-      const id = ($("orderIdInput").value || "").trim();
-      if(id) lookup(id);
+      const id = (input.value || "").trim();
+      if (id) lookup(id);
     });
 
-    const urlId = (new URLSearchParams(location.search)).get("orderId") || "";
-    if(urlId){
-      $("orderIdInput").value = urlId;
+    const urlId = new URLSearchParams(window.location.search).get("orderId");
+    if (urlId) {
+      input.value = urlId;
       lookup(urlId);
     } else {
       $("receiptStatus").textContent = "Enter an Order ID and click Lookup";
