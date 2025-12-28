@@ -153,12 +153,12 @@ body{
 }
 
 .thead, .tr{
-  display:grid;
-  grid-template-columns: 1.8fr .7fr .7fr .6fr .7fr;
-  gap:12px;
-  align-items:center;
-  padding:12px 14px;
+  display: grid;
+  grid-template-columns: 2.2fr 0.9fr 0.9fr 1.1fr 0.8fr; /* Item | WE BUY | BM BUYS | Qty | Line Total */
+  gap: 18px;
+  align-items: center;
 }
+
 
 .thead{
   background: rgba(0,0,0,.35);
@@ -184,15 +184,20 @@ body{
   justify-content:center;
   text-align:center;
 }
+
 .item{
   display:flex;
   align-items:center;
 }
 
+
 .qty{
+  width: 160px;          /* makes it look like your screenshot */
+  height: 38px;
   text-align:center;
-  width: 90px;
+  border-radius: 12px;
 }
+
 
 
 .bottom{

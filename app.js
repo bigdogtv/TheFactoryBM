@@ -57,13 +57,15 @@ function render(){
 
     tr.innerHTML = `
   <div class="item">${escapeHtml(it.item)}</div>
+  <div class="num">${money(it.weBuy)}</div>
   <div class="num">${money(it.toBuy)}</div>
-  <div class="num">${money(it.toSell)}</div>
   <div class="num">
-    <input class="qty" inputmode="numeric" pattern="[0-9]*" value="${qty}" data-item="${escapeAttr(it.item)}" />
+    <input class="qty" inputmode="numeric" pattern="[0-9]*"
+           value="${qty}" data-item="${escapeAttr(it.item)}" />
   </div>
   <div class="num lineTotal" data-item="${escapeAttr(it.item)}">${money(line)}</div>
 `;
+
 
 
     rows.appendChild(tr);
