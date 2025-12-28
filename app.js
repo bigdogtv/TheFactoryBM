@@ -29,14 +29,15 @@ function escapeAttr(s){ return escapeHtml(s).replace(/"/g, "&quot;"); }
 
 function getPriceMode(){
   const el = document.querySelector('input[name="priceMode"]:checked');
-  return el ? el.value : "weBuy"; // weBuy | toBuy | toSell
+  return el ? el.value : "toBuy";
 }
+
 function getUnitPrice(it){
   const mode = getPriceMode();
-  if (mode === "toBuy") return Number(it.toBuy || 0);
-  if (mode === "toSell") return Number(it.toSell || 0);
-  return Number(it.weBuy || 0);
+  if (mode === "weBuy") return Number(it.weBuy || 0);
+  return Number(it.toBuy || 0); // BUY BM
 }
+
 
 function render(){
   const rows = $("rows");
