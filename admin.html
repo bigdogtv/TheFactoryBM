@@ -39,6 +39,7 @@
   <script>
     const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxzktqrK7hZiiMJh4yjn3aStx0V0-x3LJkQne9LP5Bjtch1XpEFb4E5bKEDIcvU3xA8/exec";
 
+
     // Must match what you configured in Discord + Apps Script
     const DISCORD_CLIENT_ID = "1455019955048288268";
     const DISCORD_REDIRECT_URI = "https://bigdogtv.github.io/TheFactoryBM/admin.html";
@@ -89,7 +90,7 @@
       const url = `${ENDPOINT_URL}?mode=oauthExchange&code=${encodeURIComponent(code)}&callback=${cb}`;
       const data = await jsonp(url, cb);
       if(!data?.ok) throw new Error(data?.message || "OAuth failed");
-      console.log("oauthExchange response:", data);
+      console.log("oauthExchange raw:", data);
 
       return data; // {ok, session, user}
     }
