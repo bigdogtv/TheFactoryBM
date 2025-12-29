@@ -173,9 +173,10 @@
           const orderId = btn.getAttribute("data-oid");
           const status = btn.getAttribute("data-status");
 
-          const ploc = root.querySelector(`input[data-ploc="${CSS.escape(orderId)}"]`)?.value || "";
-          const pwin = root.querySelector(`input[data-pwin="${CSS.escape(orderId)}"]`)?.value || "";
-          const notes = root.querySelector(`input[data-notes="${CSS.escape(orderId)}"]`)?.value || "";
+          <input data-ploc="${o.orderId}" value="${escapeHtml(o.pickupLocation || "")}" />
+          <input data-pwin="${o.orderId}" value="${escapeHtml(o.pickupWindow || "")}" />
+          <input data-notes="${o.orderId}" value="${escapeHtml(o.notes || "")}" />
+
 
           setMsg(`Updating ${orderId} → ${status}…`);
 
