@@ -36,6 +36,13 @@
     </section>
   </main>
 
+  <div id="loginBox" style="margin-top:12px; display:none; border:1px solid var(--line); border-radius:16px; padding:12px; background:rgba(0,0,0,.25);">
+  <div style="font-weight:700; margin-bottom:6px;">Admin Access</div>
+  <div style="opacity:.85; margin-bottom:10px;">Login with Discord to manage orders.</div>
+  <button class="btn primary" id="loginDiscordBtn" type="button">Login as Admin</button>
+</div>
+
+
   <script>
     const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxzktqrK7hZiiMJh4yjn3aStx0V0-x3LJkQne9LP5Bjtch1XpEFb4E5bKEDIcvU3xA8/exec";
 
@@ -67,6 +74,12 @@
       });
       return `https://discord.com/oauth2/authorize?${params.toString()}`;
     }
+
+    function showLoginBox(show){
+  const el = document.getElementById("loginBox");
+  if (el) el.style.display = show ? "block" : "none";
+}
+
 
     // JSONP loader
     function jsonp(url, cbName){
@@ -233,6 +246,9 @@
         history.replaceState({}, "", "./admin.html");
       });
 
+      showLoginBox(true);
+
+
       $("refreshBtn").addEventListener("click", fetchOrders);
       $("q").addEventListener("input", fetchOrders);
 
@@ -251,6 +267,18 @@ if (!data.session) {
   setMsg("OAuth exchange failed: missing session.");
   return;
 }
+showLoginBox(false);
+
+
+if(getSession()){
+  showLoginBox(false);
+  setMsg("Session found. Loading orders…");
+  await fetchOrders();
+} else {
+  showLoginBox(true);
+  setMsg("Click Login as Admin to continue.");
+}
+
 
 setSession(data.session);
 
