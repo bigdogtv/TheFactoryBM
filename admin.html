@@ -238,10 +238,25 @@
         setMsg("Finishing Discord login…");
         try{
           const data = await exchangeCodeForSession(code);
-          setSession(data.session);
-          setMsg(`Logged in as ${data.user.username}. Loading orders…`);
-          history.replaceState({}, "", "./admin.html");
-          await fetchOrders();
+
+if (!data || !data.ok) {
+  setMsg(data?.message || "OAuth exchange failed.");
+  return;
+}
+
+if (!data.session) {
+  setMsg("OAuth exchange failed: missing session.");
+  return;
+}
+
+setSession(data.session);
+
+const uname = data?.user?.username || "admin";
+setMsg(`Logged in as ${uname}. Loading orders…`);
+
+history.replaceState({}, "", "./admin.html");
+await fetchOrders();
+
         }catch(err){
           setMsg(String(err.message || err));
         }
