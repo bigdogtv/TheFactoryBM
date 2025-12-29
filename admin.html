@@ -146,15 +146,15 @@
           <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:10px;">
             <div class="field">
               <label>Pickup Location</label>
-              <input data-ploc="${escapeHtml(o.orderId)}" value="${escapeHtml(o.pickupLocation || "")}" />
+              <input data-ploc="${o.orderId}" value="${escapeHtml(o.pickupLocation || "")}" />
             </div>
             <div class="field">
               <label>Pickup Window</label>
-              <input data-pwin="${escapeHtml(o.orderId)}" value="${escapeHtml(o.pickupWindow || "")}" />
+              <input data-pwin="${o.orderId}" value="${escapeHtml(o.pickupWindow || "")}" />
             </div>
             <div class="field">
               <label>Notes</label>
-              <input data-notes="${escapeHtml(o.orderId)}" value="${escapeHtml(o.notes || "")}" />
+              <input data-notes="${o.orderId}" value="${escapeHtml(o.notes || "")}" />
             </div>
           </div>
 
