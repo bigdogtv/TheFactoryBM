@@ -160,10 +160,17 @@ const STAFF_OPTIONS = [
 
       const q = ($("q").value || "").toLowerCase().trim();
       const list = (data.orders || []).filter(o => {
-        if(!q) return true;
-        const blob = `${o.orderId} ${o.playerName} ${o.server} ${o.status}`.toLowerCase();
-        return blob.includes(q);
-      });
+      const st = String(o.status || "").toLowerCase();
+
+      // Hide completed/cancelled by default
+      if (!q && (st === "completed" || st === "cancelled")) return false;
+
+      if(!q) return true;
+
+      const blob = `${o.orderId} ${o.playerName} ${o.server} ${o.status}`.toLowerCase();
+      return blob.includes(q);
+});
+
 
       renderOrders(list);
       setMsg(`Loaded ${list.length} orders`);
