@@ -266,7 +266,6 @@ const STAFF_OPTIONS = [
             console.log("update response", data);
             if(!data.ok) throw new Error(data.message || "Update failed");
             await fetchOrders();
-
           }catch(e){
             setMsg(String(e.message || e));
           }
