@@ -81,6 +81,16 @@
       return `https://discord.com/oauth2/authorize?${params.toString()}`;
     }
 
+    // ===== Staff list for assignment dropdown =====
+const STAFF_OPTIONS = [
+  "",            // blank = unassigned
+  "BigDog",
+  "",
+  "",
+  ""
+];
+
+
     // JSONP loader
     function jsonp(url, cbName){
       return new Promise((resolve, reject) => {
@@ -299,5 +309,3 @@
   </script>
 </body>
 </html>
-
-
