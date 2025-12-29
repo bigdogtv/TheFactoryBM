@@ -93,7 +93,7 @@
       if(!key) { setMsg("Paste admin key first."); return; }
 
       setMsg("Loading orders…");
-      const cb = "__ordersCB";
+      const cb = "__ordersCB_" + Date.now();
       const url = `${ENDPOINT_URL}?mode=orders&key=${encodeURIComponent(key)}&callback=${cb}`;
       let data;
       try{
