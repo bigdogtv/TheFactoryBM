@@ -15,10 +15,19 @@
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
         <h1 style="margin:0;">Admin – Orders</h1>
         <div style="display:flex; gap:8px; align-items:center;">
-          <button class="btn primary" id="loginDiscordBtn" type="button">Login with Discord</button>
+          <button class="btn primary" id="loginBtn" type="button">Login as Admin</button>
           <button class="btn ghost" id="logoutBtn" type="button">Logout</button>
           <a class="btn ghost" href="./index.html">Back to Site</a>
         </div>
+      </div>
+
+      <!-- Login box (shows only when not logged in) -->
+      <div id="loginBox" style="margin-top:12px; display:none; border:1px solid var(--line); border-radius:16px; padding:12px; background:rgba(0,0,0,.25);">
+        <div style="font-weight:700; margin-bottom:6px;">Admin Access</div>
+        <div style="opacity:.85; margin-bottom:10px;">
+          Login with Discord to manage orders (requires the admin role).
+        </div>
+        <button class="btn primary" id="loginBtn2" type="button">Login with Discord</button>
       </div>
 
       <div class="controls" style="margin-top:12px;">
@@ -36,16 +45,8 @@
     </section>
   </main>
 
-  <div id="loginBox" style="margin-top:12px; display:none; border:1px solid var(--line); border-radius:16px; padding:12px; background:rgba(0,0,0,.25);">
-  <div style="font-weight:700; margin-bottom:6px;">Admin Access</div>
-  <div style="opacity:.85; margin-bottom:10px;">Login with Discord to manage orders.</div>
-  <button class="btn primary" id="loginDiscordBtn" type="button">Login as Admin</button>
-</div>
-
-
   <script>
     const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxzktqrK7hZiiMJh4yjn3aStx0V0-x3LJkQne9LP5Bjtch1XpEFb4E5bKEDIcvU3xA8/exec";
-
 
     // Must match what you configured in Discord + Apps Script
     const DISCORD_CLIENT_ID = "1455019955048288268";
@@ -65,6 +66,11 @@
     function getSession(){ return sessionStorage.getItem("ADMIN_SESSION") || ""; }
     function setSession(s){ sessionStorage.setItem("ADMIN_SESSION", s || ""); }
 
+    function showLoginBox(show){
+      const el = $("loginBox");
+      if (el) el.style.display = show ? "block" : "none";
+    }
+
     function discordAuthUrl(){
       const params = new URLSearchParams({
         client_id: DISCORD_CLIENT_ID,
@@ -74,12 +80,6 @@
       });
       return `https://discord.com/oauth2/authorize?${params.toString()}`;
     }
-
-    function showLoginBox(show){
-  const el = document.getElementById("loginBox");
-  if (el) el.style.display = show ? "block" : "none";
-}
-
 
     // JSONP loader
     function jsonp(url, cbName){
@@ -100,11 +100,11 @@
 
     async function exchangeCodeForSession(code){
       const cb = "__oauthCB_" + Date.now();
-      const url = `${ENDPOINT_URL}?mode=oauthExchange&code=${encodeURIComponent(code)}&callback=${cb}`;
+      // IMPORTANT: your Code.gs lowercases mode, so use lowercase here
+      const url = `${ENDPOINT_URL}?mode=oauthexchange&code=${encodeURIComponent(code)}&callback=${cb}`;
       const data = await jsonp(url, cb);
       if(!data?.ok) throw new Error(data?.message || "OAuth failed");
-      console.log("oauthExchange raw:", data);
-
+      if(!data.session) throw new Error("OAuth exchange failed: missing session.");
       return data; // {ok, session, user}
     }
 
@@ -121,12 +121,15 @@
     async function fetchOrders(){
       const session = getSession();
       if(!session){
-        setMsg("Login with Discord to access admin.");
+        showLoginBox(true);
+        setMsg("Login as Admin to access orders.");
         $("orders").innerHTML = "";
         return;
       }
 
+      showLoginBox(false);
       setMsg("Loading orders…");
+
       const cb = "__ordersCB_" + Date.now();
       const url = `${ENDPOINT_URL}?mode=orders&session=${encodeURIComponent(session)}&callback=${cb}`;
 
@@ -134,10 +137,13 @@
       try{
         data = await jsonp(url, cb);
       }catch(e){
-        setMsg("Failed to load orders. (Session expired? Click Login.)");
+        showLoginBox(true);
+        setMsg("Failed to load orders. Session expired? Click Login as Admin.");
         return;
       }
+
       if(!data.ok){
+        showLoginBox(true);
         setMsg(data.message || "Unauthorized");
         return;
       }
@@ -234,74 +240,64 @@
       });
     }
 
+    function startLogin(){
+      window.location.href = discordAuthUrl();
+    }
+
     window.addEventListener("DOMContentLoaded", async () => {
-      $("loginDiscordBtn").addEventListener("click", () => {
-        window.location.href = discordAuthUrl();
-      });
+      $("loginBtn").addEventListener("click", startLogin);
+      $("loginBtn2").addEventListener("click", startLogin);
 
       $("logoutBtn").addEventListener("click", () => {
         setSession("");
-        setMsg("Logged out.");
         $("orders").innerHTML = "";
+        showLoginBox(true);
+        setMsg("Logged out.");
         history.replaceState({}, "", "./admin.html");
       });
-
-      showLoginBox(true);
-
 
       $("refreshBtn").addEventListener("click", fetchOrders);
       $("q").addEventListener("input", fetchOrders);
 
+      // If Discord redirected back with ?code=
       const code = new URLSearchParams(location.search).get("code");
       if(code){
         setMsg("Finishing Discord login…");
         try{
           const data = await exchangeCodeForSession(code);
+          setSession(data.session);
 
-if (!data || !data.ok) {
-  setMsg(data?.message || "OAuth exchange failed.");
-  return;
-}
+          const uname = data?.user?.username || "admin";
+          setMsg(`Logged in as ${uname}. Loading orders…`);
 
-if (!data.session) {
-  setMsg("OAuth exchange failed: missing session.");
-  return;
-}
-showLoginBox(false);
+          // clean URL (remove ?code=)
+          history.replaceState({}, "", "./admin.html");
 
-
-if(getSession()){
-  showLoginBox(false);
-  setMsg("Session found. Loading orders…");
-  await fetchOrders();
-} else {
-  showLoginBox(true);
-  setMsg("Click Login as Admin to continue.");
-}
-
-
-setSession(data.session);
-
-const uname = data?.user?.username || "admin";
-setMsg(`Logged in as ${uname}. Loading orders…`);
-
-history.replaceState({}, "", "./admin.html");
-await fetchOrders();
-
+          await fetchOrders();
         }catch(err){
-          setMsg(String(err.message || err));
+          const msg = String(err.message || err);
+          if (msg.toLowerCase().includes("missing required role")) {
+            setMsg("You are logged into Discord, but you do NOT have the required admin role on this server.");
+          } else {
+            setMsg(msg);
+          }
+          showLoginBox(true);
         }
         return;
       }
 
+      // Normal load
       if(getSession()){
+        showLoginBox(false);
         setMsg("Session found. Loading orders…");
         await fetchOrders();
       } else {
-        setMsg("Login with Discord to access admin.");
+        showLoginBox(true);
+        setMsg("Click Login as Admin to continue.");
       }
     });
   </script>
 </body>
 </html>
+
 
