@@ -171,18 +171,18 @@ const STAFF_OPTIONS = [
       }
 
       const q = ($("q").value || "").toLowerCase().trim();
-const showCompleted = $("showCompleted")?.checked === true;
+      const showCompleted = $("showCompleted")?.checked === true;
 
-const list = (data.orders || []).filter(o => {
-  const st = String(o.status || "").toLowerCase();
+      const list = (data.orders || []).filter(o => {
+      const st = String(o.status || "").trim().toLowerCase();
 
-  // If checkbox is OFF and user is not searching, hide completed/cancelled
-  if (!showCompleted && !q && (st === "completed" || st === "cancelled")) return false;
+            // If checkbox is OFF, always hide completed/cancelled
+      if (!showCompleted && (st === "completed" || st === "cancelled")) return false;
 
-  // Search filter
-  if (!q) return true;
-  const blob = `${o.orderId} ${o.playerName} ${o.server} ${o.status} ${o.priceMode}`.toLowerCase();
-  return blob.includes(q);
+           // If searching, apply search filter too
+      if (!q) return true;
+      const blob = `${o.orderId} ${o.playerName} ${o.server} ${o.status} ${o.priceMode}`.toLowerCase();
+      return blob.includes(q);
 });
 
 
