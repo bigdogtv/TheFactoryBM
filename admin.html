@@ -291,8 +291,8 @@ const STAFF_OPTIONS = [
 
       $("refreshBtn").addEventListener("click", fetchOrders);
       $("q").addEventListener("input", fetchOrders);
-      $("showCompleted").addEventListener("change", fetchOrders);
-
+      const sc = $("showCompleted");
+      if (sc) sc.addEventListener("change", fetchOrders);
 
       // If Discord redirected back with ?code=
       const code = new URLSearchParams(location.search).get("code");
