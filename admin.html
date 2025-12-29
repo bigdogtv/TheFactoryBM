@@ -125,6 +125,7 @@ const STAFF_OPTIONS = [
       // IMPORTANT: your Code.gs lowercases mode, so use lowercase here
       const url = `${ENDPOINT_URL}?mode=oauthexchange&code=${encodeURIComponent(code)}&callback=${cb}`;
       const data = await jsonp(url, cb);
+      console.log("orders statuses:", (data.orders || []).map(o => o.status));
       if(!data?.ok) throw new Error(data?.message || "OAuth failed");
       if(!data.session) throw new Error("OAuth exchange failed: missing session.");
       return data; // {ok, session, user}
