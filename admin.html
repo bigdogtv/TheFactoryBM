@@ -290,6 +290,8 @@ const list = (data.orders || []).filter(o => {
 
       $("refreshBtn").addEventListener("click", fetchOrders);
       $("q").addEventListener("input", fetchOrders);
+      $("showCompleted").addEventListener("change", fetchOrders);
+
 
       // If Discord redirected back with ?code=
       const code = new URLSearchParams(location.search).get("code");
