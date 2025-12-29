@@ -29,7 +29,7 @@ body{
   background:
     radial-gradient(1200px 700px at 20% 20%, rgba(255,140,0,.20), transparent 60%),
     radial-gradient(900px 600px at 80% 30%, rgba(0,140,255,.20), transparent 60%),
-    url("https://imgur.com/a/rtriHIw");
+    url("https://i.imgur.com/fzog0x3.jpeg");
   background-size: cover;
   background-position:center;
   filter: blur(10px) saturate(1.1) brightness(.65);
