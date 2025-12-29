@@ -14,16 +14,14 @@
     <section class="panel">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
         <h1 style="margin:0;">Admin – Orders</h1>
-        <a class="btn ghost" href="./index.html">Back to Site</a>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn primary" id="loginDiscordBtn" type="button">Login with Discord</button>
+          <button class="btn ghost" id="logoutBtn" type="button">Logout</button>
+          <a class="btn ghost" href="./index.html">Back to Site</a>
+        </div>
       </div>
 
       <div class="controls" style="margin-top:12px;">
-        <div class="field grow">
-          <label>Admin Key</label>
-          <input id="adminKey" placeholder="Paste admin key" />
-        </div>
-        <button class="btn primary" id="saveKeyBtn" type="button">Save Key</button>
-
         <div class="field grow">
           <label>Filter</label>
           <input id="q" placeholder="Search orderId / player / server / status" />
@@ -40,35 +38,33 @@
 
   <script>
     const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxzktqrK7hZiiMJh4yjn3aStx0V0-x3LJkQne9LP5Bjtch1XpEFb4E5bKEDIcvU3xA8/exec";
+
+    // Must match what you configured in Discord + Apps Script
+    const DISCORD_CLIENT_ID = "1455019955048288268";
+    const DISCORD_REDIRECT_URI = "https://bigdogtv.github.io/admin.html";
+    const DISCORD_SCOPES = "identify guilds.members.read";
+
     const $ = (id) => document.getElementById(id);
 
     function setMsg(t){ $("adminMsg").textContent = t; }
 
-    function loadSavedKey(){
-      const k = sessionStorage.getItem("ADMIN_KEY") || "";
-      $("adminKey").value = k;
-      return k;
-    }
-
-    function saveKey(){
-      const k = ($("adminKey").value || "").trim();
-      sessionStorage.setItem("ADMIN_KEY", k);
-      setMsg("Key saved.");
-      return k;
-    }
-
     function escapeHtml(s){
-      return String(s).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+      return String(s).replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[m]));
     }
 
-    function statusButtons(orderId, current, meta){
-      const statuses = ["new","accepted","preparing","ready","completed","cancelled"];
-      return statuses.map(st => `
-        <button class="btn ${st===current ? "primary" : "ghost"}"
-          data-oid="${orderId}" data-status="${st}">
-          ${st}
-        </button>
-      `).join("");
+    function getSession(){ return sessionStorage.getItem("ADMIN_SESSION") || ""; }
+    function setSession(s){ sessionStorage.setItem("ADMIN_SESSION", s || ""); }
+
+    function discordAuthUrl(){
+      const params = new URLSearchParams({
+        client_id: DISCORD_CLIENT_ID,
+        redirect_uri: DISCORD_REDIRECT_URI,
+        response_type: "code",
+        scope: DISCORD_SCOPES
+      });
+      return `https://discord.com/oauth2/authorize?${params.toString()}`;
     }
 
     // JSONP loader
@@ -78,7 +74,7 @@
         window[cbName] = (data) => { resolve(data); cleanup(); };
         function cleanup(){
           document.getElementById(id)?.remove();
-          delete window[cbName];
+          try { delete window[cbName]; } catch {}
         }
         const s = document.createElement("script");
         s.id = id;
@@ -88,18 +84,41 @@
       });
     }
 
+    async function exchangeCodeForSession(code){
+      const cb = "__oauthCB_" + Date.now();
+      const url = `${ENDPOINT_URL}?mode=oauthExchange&code=${encodeURIComponent(code)}&callback=${cb}`;
+      const data = await jsonp(url, cb);
+      if(!data?.ok) throw new Error(data?.message || "OAuth failed");
+      return data; // {ok, session, user}
+    }
+
+    function statusButtons(orderId, current){
+      const statuses = ["new","accepted","preparing","ready","completed","cancelled"];
+      return statuses.map(st => `
+        <button class="btn ${st===current ? "primary" : "ghost"}"
+          data-oid="${orderId}" data-status="${st}">
+          ${st}
+        </button>
+      `).join("");
+    }
+
     async function fetchOrders(){
-      const key = ($("adminKey").value || "").trim();
-      if(!key) { setMsg("Paste admin key first."); return; }
+      const session = getSession();
+      if(!session){
+        setMsg("Login with Discord to access admin.");
+        $("orders").innerHTML = "";
+        return;
+      }
 
       setMsg("Loading orders…");
       const cb = "__ordersCB_" + Date.now();
-      const url = `${ENDPOINT_URL}?mode=orders&key=${encodeURIComponent(key)}&callback=${cb}`;
+      const url = `${ENDPOINT_URL}?mode=orders&session=${encodeURIComponent(session)}&callback=${cb}`;
+
       let data;
       try{
         data = await jsonp(url, cb);
       }catch(e){
-        setMsg("Failed to load orders. (Wrong key or endpoint?)");
+        setMsg("Failed to load orders. (Session expired? Click Login.)");
         return;
       }
       if(!data.ok){
@@ -166,22 +185,21 @@
         root.appendChild(div);
       }
 
-      // bind buttons
+      // bind status buttons
       root.querySelectorAll("button[data-oid]").forEach(btn => {
         btn.addEventListener("click", async () => {
-          const key = ($("adminKey").value || "").trim();
+          const session = getSession();
           const orderId = btn.getAttribute("data-oid");
           const status = btn.getAttribute("data-status");
 
-          <input data-ploc="${o.orderId}" value="${escapeHtml(o.pickupLocation || "")}" />
-          <input data-pwin="${o.orderId}" value="${escapeHtml(o.pickupWindow || "")}" />
-          <input data-notes="${o.orderId}" value="${escapeHtml(o.notes || "")}" />
-
+          const ploc  = root.querySelector(`input[data-ploc="${CSS.escape(orderId)}"]`)?.value || "";
+          const pwin  = root.querySelector(`input[data-pwin="${CSS.escape(orderId)}"]`)?.value || "";
+          const notes = root.querySelector(`input[data-notes="${CSS.escape(orderId)}"]`)?.value || "";
 
           setMsg(`Updating ${orderId} → ${status}…`);
 
-          const cb = "__updCB";
-          const url = `${ENDPOINT_URL}?mode=adminUpdate&key=${encodeURIComponent(key)}`
+          const cb = "__updCB_" + Date.now();
+          const url = `${ENDPOINT_URL}?mode=adminUpdate&session=${encodeURIComponent(session)}`
             + `&orderId=${encodeURIComponent(orderId)}`
             + `&status=${encodeURIComponent(status)}`
             + `&pickupLocation=${encodeURIComponent(ploc)}`
@@ -200,13 +218,44 @@
       });
     }
 
-    window.addEventListener("DOMContentLoaded", () => {
-      loadSavedKey();
-      $("saveKeyBtn").addEventListener("click", saveKey);
+    window.addEventListener("DOMContentLoaded", async () => {
+      $("loginDiscordBtn").addEventListener("click", () => {
+        window.location.href = discordAuthUrl();
+      });
+
+      $("logoutBtn").addEventListener("click", () => {
+        setSession("");
+        setMsg("Logged out.");
+        $("orders").innerHTML = "";
+        history.replaceState({}, "", "./admin.html");
+      });
+
       $("refreshBtn").addEventListener("click", fetchOrders);
       $("q").addEventListener("input", fetchOrders);
-      setMsg("Paste admin key and click Refresh.");
+
+      const code = new URLSearchParams(location.search).get("code");
+      if(code){
+        setMsg("Finishing Discord login…");
+        try{
+          const data = await exchangeCodeForSession(code);
+          setSession(data.session);
+          setMsg(`Logged in as ${data.user.username}. Loading orders…`);
+          history.replaceState({}, "", "./admin.html");
+          await fetchOrders();
+        }catch(err){
+          setMsg(String(err.message || err));
+        }
+        return;
+      }
+
+      if(getSession()){
+        setMsg("Session found. Loading orders…");
+        await fetchOrders();
+      } else {
+        setMsg("Login with Discord to access admin.");
+      }
     });
   </script>
 </body>
 </html>
+
