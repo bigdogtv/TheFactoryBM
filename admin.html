@@ -89,6 +89,8 @@
       const url = `${ENDPOINT_URL}?mode=oauthExchange&code=${encodeURIComponent(code)}&callback=${cb}`;
       const data = await jsonp(url, cb);
       if(!data?.ok) throw new Error(data?.message || "OAuth failed");
+      console.log("oauthExchange response:", data);
+
       return data; // {ok, session, user}
     }
 
