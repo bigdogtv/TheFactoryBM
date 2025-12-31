@@ -44,10 +44,6 @@
     </label>
   </div>
 
-  <button class="btn" id="refreshBtn" type="button">Refresh</button>
-</div>
-
-
         <button class="btn" id="refreshBtn" type="button">Refresh</button>
       </div>
 
@@ -97,9 +93,6 @@
 const STAFF_OPTIONS = [
   "",            // blank = unassigned
   "BigDog",
-  "",
-  "",
-  ""
 ];
 
 
@@ -142,55 +135,50 @@ const STAFF_OPTIONS = [
     }
 
     async function fetchOrders(){
-      const session = getSession();
-      if(!session){
-        showLoginBox(true);
-        setMsg("Login as Admin to access orders.");
-        $("orders").innerHTML = "";
-        return;
-      }
+  const session = getSession();
+  if(!session){
+    showLoginBox(true);
+    setMsg("Login as Admin to access orders.");
+    $("orders").innerHTML = "";
+    return;
+  }
 
-      showLoginBox(false);
-      setMsg("Loading orders…");
+  showLoginBox(false);
+  setMsg("Loading orders…");
 
-      const cb = "__ordersCB_" + Date.now();
-      const url = `${ENDPOINT_URL}?mode=orders&session=${encodeURIComponent(session)}&callback=${cb}`;
+  const cb = "__ordersCB_" + Date.now();
+  const url = `${ENDPOINT_URL}?mode=adminupdate&session=${encodeURIComponent(session)}&callback=${cb}`;
 
-      let data;
-      try{
-        data = await jsonp(url, cb);
-      }catch(e){
-        showLoginBox(true);
-        setMsg("Failed to load orders. Session expired? Click Login as Admin.");
-        return;
-      }
+  let data;
+  try{
+    data = await jsonp(url, cb);
+  }catch(e){
+    showLoginBox(true);
+    setMsg("Failed to load orders. Session expired? Click Login as Admin.");
+    return;
+  }
 
-      if(!data.ok){
-        showLoginBox(true);
-        setMsg(data.message || "Unauthorized");
-        return;
-      }
+  if(!data.ok){
+    showLoginBox(true);
+    setMsg(data.message || "Unauthorized");
+    return;
+  }
 
-      const q = ($("q").value || "").toLowerCase().trim();
-      const showCompleted = $("showCompleted")?.checked === true;
+  const q = ($("q").value || "").toLowerCase().trim();
+  const showCompleted = $("showCompleted")?.checked === true;
 
-      const list = (data.orders || []).filter(o => {
-      const st = String(o.status || "").trim().toLowerCase();
+  const list = (data.orders || []).filter(o => {
+    const st = String(o.status || "").trim().toLowerCase();
+    if (!showCompleted && (st === "completed" || st === "cancelled")) return false;
+    if (!q) return true;
+    const blob = `${o.orderId} ${o.playerName} ${o.server} ${o.status} ${o.priceMode}`.toLowerCase();
+    return blob.includes(q);
+  });
 
-            // If checkbox is OFF, always hide completed/cancelled
-      if (!showCompleted && (st === "completed" || st === "cancelled")) return false;
+  renderOrders(list);
+  setMsg(`Loaded ${list.length} orders`);
+}
 
-           // If searching, apply search filter too
-      if (!q) return true;
-      const blob = `${o.orderId} ${o.playerName} ${o.server} ${o.status} ${o.priceMode}`.toLowerCase();
-      return blob.includes(q);
-});
-
-
-
-      renderOrders(list);
-      setMsg(`Loaded ${list.length} orders`);
-    }
 
     function renderOrders(list){
       const root = $("orders");
